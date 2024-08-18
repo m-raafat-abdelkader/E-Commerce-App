@@ -1,11 +1,24 @@
 import { Router } from "express";
+
+//Controller
 import * as controller from "./brands.controller.js";
-import { errorHandler } from "../../Middlewares/error-handling.middleware.js";
-import { multerHost } from "../../Middlewares/multer.middleware.js";
+
+//Middlewares
+import * as middlewares from "../../Middlewares/index.js";
+
+//Utils
 import { extensions } from "../../Utils/index.js";
-import { getDocumentByName } from "../../Middlewares/finders.middleware.js";
+
+//Models
 import { Brand } from "../../../DB/Models/index.js";
+
+
+// get the required middlewares
+const {multerHost, getDocumentByName, errorHandler} = middlewares
+
 const brandRouter = Router(); 
+
+
 
 brandRouter.post(
     "/create",
@@ -14,7 +27,10 @@ brandRouter.post(
      errorHandler(controller.createBrand)
 )
 
+
+
 brandRouter.get("/getBrand", errorHandler(controller.getBrand))
+
 
 brandRouter.put(
     "/update/:_id",
@@ -24,6 +40,14 @@ brandRouter.put(
 )
 
 
+
 brandRouter.delete("/delete/:_id",errorHandler(controller.deleteBrand))
+
+
+
+brandRouter.get("/getSpecificBrands", errorHandler(controller.getSpecificBrands))
+
+
+
 
 export { brandRouter }

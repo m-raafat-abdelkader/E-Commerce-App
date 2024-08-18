@@ -1,11 +1,17 @@
 import slugify from "slugify"
 import { nanoid } from "nanoid"
 
-import {cloudinaryConfig, ErrorClass} from "../../Utils/index.js"
-import { Brand, SubCategory } from "../../../DB/Models/index.js"
+//Utils
+import {ErrorClass, uploadFile, cloudinaryConfig} from "../../Utils/index.js"
+
+//Models
+import { Brand, Category, SubCategory, Product } from "../../../DB/Models/index.js"
+
+
+
 
 /**
- * @api {post} /brands/Create  Create a brand
+ * @api {post} /brands/create  Create a brand
  */
 export const createBrand = async (req, res, next) => {
     const {categoryId, subCategoryId} = req.query
@@ -27,12 +33,11 @@ export const createBrand = async (req, res, next) => {
 
     //upload the logo to cloudinary
     const customId = nanoid(4)
-    const {secure_url, public_id} = await cloudinaryConfig().uploader.upload(
-        req.file.path,
-        {
+
+    const {secure_url, public_id} = await uploadFile({
+        file: req.file.path,
         folder: `${process.env.UPLOADS_FOLDER}/Categories/${subCategory.categoryId.customId}/Sub-Categories/${subCategory.customId}/Brands/${customId}`,
-        }
-    )
+    })
 
     //prepare brand object 
     const brand = {
@@ -61,10 +66,14 @@ export const createBrand = async (req, res, next) => {
 }
 
 
+
+
+
+
+
 /**
  * @api {get} /brands/getBrand Get brand by name or id or slug
  */
-
 export const getBrand = async (req, res, next) => {
     const {id, name, slug} =  req.query 
     const queryFilter = {}
@@ -88,10 +97,15 @@ export const getBrand = async (req, res, next) => {
 }
 
 
+
+
+
+
+
+
 /**
  * @api {put} /brands/update/:_id  Update a brand
  */
-
 export const updateBrand = async (req, res, next) => {
     //get the brand id
     const {_id} = req.params
@@ -112,14 +126,13 @@ export const updateBrand = async (req, res, next) => {
     //update the logo of the brand
     if(req.file){
         const splitedPublicId = brand.logo.public_id.split(`${brand.customId}/`)[1]
-        const {secure_url} = await cloudinaryConfig().uploader.upload(
-            req.file.path,
-            {
+        const {secure_url} = await uploadFile({
+            file: req.file.path,
             folder: `${process.env.UPLOADS_FOLDER}/Categories/${brand.categoryId.customId}/Sub-Categories/${brand.subCategoryId.customId}/Brands/${brand.customId}`,
             public_id: splitedPublicId
-            }
-        )
-       brand.logo.secure_url = secure_url
+        })
+        
+        brand.logo.secure_url = secure_url
 
     }
 
@@ -136,10 +149,13 @@ export const updateBrand = async (req, res, next) => {
 }
 
 
+
+
+
+
 /**
  * @api {delete} /brands/delete/:_id  Delete a brand
  */
-
 export const deleteBrand = async (req, res, next) => {
     //get the brand id
     const {_id} = req.params
@@ -153,11 +169,51 @@ export const deleteBrand = async (req, res, next) => {
     await cloudinaryConfig().api.delete_resources_by_prefix(brandPath)
     await cloudinaryConfig().api.delete_folder(brandPath)
 
-    //TODO: delete products 
+    // delete the related products from db
+    await Product.deleteMany({ brandId: brand._id });
 
     
     res.status(200).json({
         status: "success",
         message: "Brand deleted successfully"
+    })
+}
+
+
+
+
+
+
+
+
+/**
+ * @api {get} /brands/getSpecificBrands Get brands for specific subCategory or category
+ */
+export const getSpecificBrands = async (req, res, next) => {
+    const {categoryName, subCategoryName} =  req.query 
+    const queryFilter = []
+    // check if the query params are present
+    if(categoryName){
+        var category = await Category.findOne({name: categoryName})
+        queryFilter.push({categoryId: category._id})
+        
+    }  
+    if(subCategoryName) {
+        var subCategory = await SubCategory.findOne({name: subCategoryName})
+        queryFilter.push({subCategoryId: subCategory._id})
+    } 
+
+    //find the brand
+    const brands = await Brand.find({
+        $or: queryFilter
+    }).select("name slug logo")
+    if(!brands) return next(new ErrorClass("No brands found", 404, "No brands found"))
+
+    res.status(200).json({
+        status: "success",
+        message: "Brands found successfully",
+        data: { 
+            brands
+        }    
     })
 }

@@ -1,5 +1,8 @@
 import { ErrorClass } from "../Utils/index.js";
 
+
+
+
 export const errorHandler = (API) => {
   return (req, res, next) => {
     API(req, res, next)?.catch((err) => {
@@ -15,6 +18,9 @@ export const errorHandler = (API) => {
     });
   };
 };
+
+
+
 
 export const globalResponse = (err, req, res, next) => {
   if (err) {

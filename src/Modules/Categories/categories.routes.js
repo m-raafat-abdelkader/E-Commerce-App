@@ -1,11 +1,24 @@
 import { Router } from "express";
+
+//Controller
 import * as controller from "./categories.controller.js";
-import { errorHandler } from "../../Middlewares/error-handling.middleware.js";
-import { multerHost } from "../../Middlewares/multer.middleware.js";
+
+//Middlewares
+import * as middlewares from "../../Middlewares/index.js";
+
+//Utils
 import { extensions } from "../../Utils/index.js";
-import { getDocumentByName } from "../../Middlewares/finders.middleware.js";
+
+//Models
 import { Category } from "../../../DB/Models/index.js";
+
+
+// get the required middlewares
+const {multerHost, getDocumentByName, errorHandler} = middlewares
+
 const categoryRouter = Router(); 
+
+
 
 categoryRouter.post(
     "/create",
@@ -15,7 +28,10 @@ categoryRouter.post(
 )
 
 
+
 categoryRouter.get("/getCategory", errorHandler(controller.getCategory))    
+
+
 
 categoryRouter.put(
     "/update/:_id",
@@ -25,6 +41,14 @@ categoryRouter.put(
 )
 
 
+
 categoryRouter.delete("/delete/:_id",errorHandler(controller.deleteCategory))
+
+
+
+categoryRouter.get("/getAllCategories", errorHandler(controller.getAllCategories))
+
+
+
 
 export { categoryRouter }
