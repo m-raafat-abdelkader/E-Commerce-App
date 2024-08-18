@@ -1,11 +1,24 @@
 import { Router } from "express";
+
+//Controller
 import * as controller from "./sub-categories.controller.js";
-import { errorHandler } from "../../Middlewares/error-handling.middleware.js";
-import { multerHost } from "../../Middlewares/multer.middleware.js";
+
+//Middlewares
+import * as middlewares from "../../Middlewares/index.js";
+
+//Utils
 import { extensions } from "../../Utils/index.js";
-import { getDocumentByName } from "../../Middlewares/finders.middleware.js";
+
+//Models
 import { SubCategory } from "../../../DB/Models/index.js";
+
+
+// get the required middlewares
+const {multerHost, getDocumentByName, errorHandler} = middlewares
+
+
 const subCategoryRouter = Router(); 
+
 
 subCategoryRouter.post(
     "/create",
@@ -14,7 +27,11 @@ subCategoryRouter.post(
     errorHandler(controller.createSubCategory)
 )
 
+
+
 subCategoryRouter.get("/getSubCategory", errorHandler(controller.getSubCategory))
+
+
 
 subCategoryRouter.put(
     "/update/:_id",
@@ -23,6 +40,16 @@ subCategoryRouter.put(
     errorHandler(controller.updateSubCategory)
 )
 
+
+
 subCategoryRouter.delete("/delete/:_id", errorHandler(controller.deleteSubCategory))
+
+
+
+subCategoryRouter.get("/getAllSubCategories", errorHandler(controller.getAllSubCategories))
+
+
+
+
 
 export { subCategoryRouter }

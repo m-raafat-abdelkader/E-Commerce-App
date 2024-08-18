@@ -1,11 +1,18 @@
 import slugify from "slugify"
 import { nanoid } from "nanoid"
 
-import {cloudinaryConfig, ErrorClass} from "../../Utils/index.js"
-import { Category, SubCategory, Brand } from "../../../DB/Models/index.js"
+//Utils
+import {ErrorClass, uploadFile, cloudinaryConfig} from "../../Utils/index.js"
+
+//Models
+import { Category, SubCategory, Brand, Product } from "../../../DB/Models/index.js"
+
+
+
+
 
 /**
- * @api {post} /sub-categories/Create Create a sub-category
+ * @api {post} /sub-categories/create Create a sub-category
  */
 export const createSubCategory = async (req, res, next) => {
     //Check if the category exists
@@ -21,11 +28,11 @@ export const createSubCategory = async (req, res, next) => {
         return next(new ErrorClass("please upload an image", 400, "Please upload an image"))
     }
     const customId = nanoid(4)
-    const {secure_url, public_id} = await cloudinaryConfig().uploader.upload(req.file.path,
-        {
+
+    const {secure_url, public_id} = await uploadFile({
+        file: req.file.path,
         folder: `${process.env.UPLOADS_FOLDER}/Categories/${category.customId}/Sub-Categories/${customId}`
-        }
-    )    
+    })    
 
     //prepare sub-category object 
     const subCategory = {
@@ -53,10 +60,11 @@ export const createSubCategory = async (req, res, next) => {
 
 
 
+
+
 /**
  * @api {get} /sub-categories/getSubCategory Get sub-category by name or id or slug
  */
-
 export const getSubCategory = async (req, res, next) => {
     const {id, name, slug} =  req.query 
     const queryFilter = {}
@@ -78,6 +86,9 @@ export const getSubCategory = async (req, res, next) => {
         }    
     })
 }
+
+
+
 
 
 
@@ -104,13 +115,11 @@ export const updateSubCategory = async (req, res, next) => {
     //update the image of the sub-category
     if(req.file){
         const splitedPublicId = subCategory.image.public_id.split(`${subCategory.customId}/`)[1]
-        const {secure_url} = await cloudinaryConfig().uploader.upload(
-            req.file.path,
-            {
+        const {secure_url} = await uploadFile({
+            file: req.file.path,
             folder: `${process.env.UPLOADS_FOLDER}/Categories/${subCategory.categoryId.customId}/Sub-Categories/${subCategory.customId}`,
             public_id: splitedPublicId
-            }
-        )
+        })
        subCategory.image.secure_url = secure_url
 
     }
@@ -130,10 +139,11 @@ export const updateSubCategory = async (req, res, next) => {
 
 
 
+
+
 /**
  * @api {delete} /sub-categories/delete/:_id  Delete a sub-category
  */
-
 export const deleteSubCategory = async (req, res, next) => {
     //get the sub-category id
     const {_id} = req.params
@@ -150,8 +160,73 @@ export const deleteSubCategory = async (req, res, next) => {
     //delete the brand of the sub-category
     await Brand.deleteMany({subCategoryId: subCategory._id})
 
+    //delete the products of the sub-category
+    await Product.deleteMany({subCategoryId: subCategory._id})
+
     res.status(200).json({
         status: "success",
         message: "Sub-Category deleted successfully"
+    })
+}
+
+
+
+
+
+
+
+/**
+ * @api {get} /sub-categories/getAllSubCategories  Get all sub-categories paginated with its brands
+ */
+export const getAllSubCategories = async (req, res, next) => {
+
+    //get the page and limit from the query params
+    const {page, limit} = req.query
+    const skip = (page - 1) * limit
+
+    //prepare aggregation pipeline 
+    const pipeline = [
+        {
+            $lookup: {
+                from: "brands",
+                localField: "_id",
+                foreignField: "subCategoryId",
+                as: "brands"
+            }
+        },
+        {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    slug: 1,
+                    image: 1,
+                    brands: {
+                        _id: 1,
+                        name: 1,
+                        slug: 1,
+                        image: 1
+                    }
+                }
+        },
+        {
+            $skip: parseInt(skip)
+        },
+        {
+            $limit: parseInt(limit)
+        }
+        
+    ]
+
+    //find all sub-categories paginated with its brands
+    const subCategories = await SubCategory.aggregate(pipeline)
+    const totalDocs = await SubCategory.countDocuments()
+    subCategories.push({page: parseInt(page), totalDocs: parseInt(totalDocs)})
+  
+
+    res.status(200).json({
+        status: "success",
+        message: "Sub-Categories found successfully",
+        subCategories
+    
     })
 }

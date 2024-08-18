@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from "../global-setup.js";
 const {Schema, model} = mongoose
 
 const subCategorySchema = new Schema({
@@ -11,7 +11,8 @@ const subCategorySchema = new Schema({
     slug: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        lowercase: true
     },
     createdBy:{
         type: mongoose.Schema.Types.ObjectId,
